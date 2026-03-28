@@ -4,3 +4,4 @@ tensorflow
 werkzeug
 groq
 tf-keras
+python-dotenv
