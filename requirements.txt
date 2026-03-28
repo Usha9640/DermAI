@@ -1,0 +1,6 @@
+flask
+numpy
+tensorflow
+werkzeug
+groq
+tf-keras

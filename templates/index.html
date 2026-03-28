@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>DermAI — AI Skin Disease Detection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ── Reset ───────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#06080e;--s1:#0c1118;--s2:#111920;--s3:#172231;
+  --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.1);
+  --teal:#00e5b4;--teal2:#00bc94;--blue:#3d8ef8;--violet:#9b6dff;
+  --gold:#f5a623;--red:#f0564a;--green:#22c55e;
+  --text:#edf2f8;--mid:#8898b5;--muted:#48596e;
+  --fh:'Outfit',sans-serif;--fb:'DM Sans',sans-serif;
+  --ease:cubic-bezier(.4,0,.2,1);--spring:cubic-bezier(.34,1.56,.64,1);
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--fb);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+/* Global BG */
+#bg{position:fixed;inset:0;z-index:0;pointer-events:none;}
+#bg::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 900px 700px at -5% 0%,rgba(0,229,180,.09) 0%,transparent 60%),
+    radial-gradient(ellipse 700px 500px at 108% 100%,rgba(61,142,248,.07) 0%,transparent 60%);}
+#bg::after{content:'';position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);
+  background-size:60px 60px;}
+
+/* ── Nav ─────────────────────────────── */
+.nav{position:fixed;top:0;left:0;right:0;z-index:900;height:62px;
+  display:flex;align-items:center;padding:0 44px;gap:4px;
+  background:rgba(6,8,14,.9);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);}
+.nav-brand{font-family:var(--fh);font-size:1.25rem;font-weight:900;color:var(--text);
+  display:flex;align-items:center;gap:9px;margin-right:auto;cursor:pointer;text-decoration:none;}
+.nav-dot{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--teal2),var(--teal));
+  display:flex;align-items:center;justify-content:center;font-size:.84rem;
+  box-shadow:0 4px 14px rgba(0,229,180,.3);}
+.nav-brand b{color:var(--teal);}
+.nav-link{padding:7px 13px;border-radius:8px;font-size:.82rem;font-weight:500;color:var(--mid);
+  cursor:pointer;transition:all .18s;border:1px solid transparent;}
+.nav-link:hover{background:rgba(255,255,255,.05);color:var(--text);}
+.nav-link.on{background:rgba(0,229,180,.1);color:var(--teal);border-color:rgba(0,229,180,.15);}
+.nav-cta{margin-left:8px;padding:8px 20px;border-radius:8px;background:var(--teal);
+  color:#06080e;font-family:var(--fh);font-size:.82rem;font-weight:700;cursor:pointer;
+  border:none;transition:all .2s;box-shadow:0 4px 18px rgba(0,229,180,.25);}
+.nav-cta:hover{background:var(--teal2);transform:translateY(-1px);}
+
+/* ── Page system ─────────────────────── */
+.page{display:none;position:relative;z-index:1;min-height:100vh;padding-top:62px;}
+.page.show{display:block;animation:pgIn .38s var(--ease) both;}
+#page-chat{display:none;flex-direction:column;}
+#page-chat.show{display:flex;height:100vh;}
+@keyframes pgIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Shared ──────────────────────────── */
+.wrap{max-width:1140px;margin:0 auto;padding:0 44px;}
+.tag{display:inline-flex;align-items:center;gap:7px;font-size:.67rem;font-weight:700;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--teal);margin-bottom:12px;}
+.tag::before{content:'';width:18px;height:2px;background:var(--teal);border-radius:2px;}
+.h1{font-family:var(--fh);font-size:clamp(2rem,4vw,2.8rem);font-weight:800;
+  letter-spacing:-.025em;line-height:1.1;margin-bottom:10px;}
+.sub{font-size:.93rem;color:var(--mid);line-height:1.76;max-width:500px;margin-bottom:44px;}
+.btn-p{display:inline-flex;align-items:center;gap:7px;padding:12px 28px;border-radius:10px;
+  background:var(--teal);color:#06080e;font-family:var(--fh);font-size:.88rem;font-weight:700;
+  border:none;cursor:pointer;text-decoration:none;transition:all .25s;
+  box-shadow:0 6px 22px rgba(0,229,180,.28);}
+.btn-p:hover{background:var(--teal2);transform:translateY(-2px);box-shadow:0 12px 34px rgba(0,229,180,.4);}
+.btn-g{display:inline-flex;align-items:center;gap:7px;padding:12px 28px;border-radius:10px;
+  border:1px solid var(--border2);background:rgba(255,255,255,.03);color:var(--text);
+  font-size:.88rem;font-weight:500;cursor:pointer;text-decoration:none;transition:all .25s;}
+.btn-g:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.18);}
+.badge{display:inline-block;padding:3px 10px;border-radius:100px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;}
+.b-mild{background:rgba(0,229,180,.1);color:var(--teal);}
+.b-mod{background:rgba(245,166,35,.1);color:var(--gold);}
+.b-sev{background:rgba(240,86,74,.1);color:var(--red);}
+.b-chr{background:rgba(155,109,255,.1);color:var(--violet);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:22px 44px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.foot-brand{font-family:var(--fh);font-weight:800;font-size:.92rem;}
+.foot-brand b{color:var(--teal);}
+.foot-note{font-size:.68rem;color:var(--muted);}
+
+/* ═══════════════════════════════════════
+   PAGE 1 — HOME
+═══════════════════════════════════════ */
+.hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:88px 44px 80px;}
+.hero-pill{display:inline-flex;align-items:center;gap:7px;padding:6px 16px;border-radius:100px;
+  border:1px solid rgba(0,229,180,.22);background:rgba(0,229,180,.07);
+  font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);
+  margin-bottom:28px;animation:up .8s var(--ease) both;}
+.hero-pill::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--teal);
+  box-shadow:0 0 8px var(--teal);animation:blink 2.5s ease infinite;}
+.hero-h1{font-family:var(--fh);font-size:clamp(2.8rem,7vw,5.2rem);font-weight:900;
+  line-height:1.04;letter-spacing:-.035em;max-width:860px;margin-bottom:20px;
+  animation:up .8s .1s var(--ease) both;}
+.hero-h1 .gr{background:linear-gradient(120deg,var(--teal) 0%,var(--blue) 50%,var(--violet) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-p{font-size:1.06rem;color:var(--mid);line-height:1.78;max-width:540px;
+  margin-bottom:40px;animation:up .8s .2s var(--ease) both;}
+.hero-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;
+  margin-bottom:68px;animation:up .8s .3s var(--ease) both;}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);
+  border:1px solid var(--border2);border-radius:16px;overflow:hidden;
+  background:var(--s1);max-width:600px;width:100%;animation:up .8s .4s var(--ease) both;}
+.stat{padding:20px 14px;text-align:center;border-right:1px solid var(--border);}
+.stat:last-child{border-right:none;}
+.stat-n{font-family:var(--fh);font-size:1.55rem;font-weight:800;color:var(--teal);margin-bottom:4px;}
+.stat-l{font-size:.64rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);}
+@keyframes up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+.steps-sec{padding:90px 0;}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;}
+.step{background:var(--s1);border:1px solid var(--border);padding:32px 24px;
+  position:relative;overflow:hidden;transition:all .3s;}
+.step:first-child{border-radius:16px 0 0 16px;}
+.step:last-child{border-radius:0 16px 16px 0;}
+.step:hover{background:var(--s2);border-color:rgba(0,229,180,.18);}
+.step::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--teal),var(--blue));transform:scaleX(0);
+  transform-origin:left;transition:transform .35s;}
+.step:hover::after{transform:scaleX(1);}
+.step-n{font-family:var(--fh);font-size:2.6rem;font-weight:900;color:rgba(0,229,180,.09);line-height:1;margin-bottom:14px;}
+.step-ico{font-size:1.4rem;margin-bottom:12px;}
+.step-title{font-family:var(--fh);font-size:.94rem;font-weight:700;margin-bottom:8px;}
+.step-desc{font-size:.82rem;color:var(--mid);line-height:1.7;}
+
+.conds-sec{padding:0 0 90px;}
+.cond-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:32px;}
+.cond{background:var(--s1);border:1px solid var(--border);border-radius:16px;
+  padding:22px 12px 18px;text-align:center;transition:all .28s;cursor:default;}
+.cond:hover{transform:translateY(-6px);background:var(--s2);border-color:rgba(0,229,180,.2);
+  box-shadow:0 20px 44px rgba(0,0,0,.4);}
+.cond-em{font-size:2.1rem;display:block;margin-bottom:10px;}
+.cond-name{font-family:var(--fh);font-size:.86rem;font-weight:700;margin-bottom:7px;}
+.cond-desc{font-size:.71rem;color:var(--muted);line-height:1.58;margin-bottom:10px;}
+
+.cta-sec{padding:0 0 90px;}
+.cta-box{background:linear-gradient(135deg,rgba(0,229,180,.07),rgba(61,142,248,.04));
+  border:1px solid rgba(0,229,180,.14);border-radius:22px;padding:60px 44px;text-align:center;}
+.cta-box .sub{margin:0 auto 34px;}
+
+/* ═══════════════════════════════════════
+   PAGE 2 — DIAGNOSE
+═══════════════════════════════════════ */
+#page-diagnose .inner{max-width:1140px;margin:0 auto;padding:48px 44px 80px;}
+.page-hdr{margin-bottom:36px;}
+.page-tag{display:inline-flex;align-items:center;gap:7px;font-size:.67rem;font-weight:700;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--teal);margin-bottom:10px;}
+.page-tag::before{content:'';width:18px;height:2px;background:var(--teal);border-radius:2px;}
+.page-h1{font-family:var(--fh);font-size:clamp(1.8rem,4vw,2.5rem);font-weight:800;
+  letter-spacing:-.024em;margin-bottom:9px;line-height:1.1;}
+.page-sub{font-size:.9rem;color:var(--mid);line-height:1.74;max-width:500px;}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;}
+.card{background:var(--s1);border:1px solid var(--border2);border-radius:20px;overflow:hidden;}
+.card-hd{padding:16px 20px;display:flex;align-items:center;gap:10px;
+  background:rgba(0,229,180,.04);border-bottom:1px solid var(--border);}
+.card-ico{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--teal2),var(--teal));
+  display:flex;align-items:center;justify-content:center;font-size:.83rem;flex-shrink:0;}
+.card-hd-t{font-family:var(--fh);font-size:.9rem;font-weight:700;}
+.card-hd-s{font-size:.68rem;color:var(--mid);margin-top:1px;}
+.card-body{padding:20px;}
+
+.srv-row{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;
+  margin-bottom:14px;font-size:.77rem;font-weight:500;border:1px solid;}
+.srv-row.checking{background:rgba(255,255,255,.02);border-color:var(--border);color:var(--muted);}
+.srv-row.online{background:rgba(0,229,180,.06);border-color:rgba(0,229,180,.22);color:var(--teal);}
+.srv-row.offline{background:rgba(240,86,74,.05);border-color:rgba(240,86,74,.18);color:var(--red);}
+.srv-row.ai-mode{background:rgba(61,142,248,.07);border-color:rgba(61,142,248,.22);color:var(--blue);}
+.srv-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.online .srv-dot{background:var(--teal);box-shadow:0 0 6px var(--teal);animation:blink 2s ease infinite;}
+.offline .srv-dot{background:var(--red);}
+.ai-mode .srv-dot{background:var(--blue);box-shadow:0 0 6px var(--blue);animation:blink 2s ease infinite;}
+.checking .srv-dot{background:var(--muted);}
+
+.dropzone{border:2px dashed rgba(0,229,180,.2);border-radius:14px;padding:40px 18px;
+  text-align:center;cursor:pointer;background:rgba(0,229,180,.02);transition:all .3s;}
+.dropzone:hover,.dropzone.over{border-color:var(--teal);background:rgba(0,229,180,.06);
+  box-shadow:0 0 0 5px rgba(0,229,180,.05);}
+.dz-ico{width:64px;height:64px;border-radius:18px;margin:0 auto 14px;
+  background:linear-gradient(135deg,rgba(0,229,180,.14),rgba(61,142,248,.08));
+  border:1px solid rgba(0,229,180,.2);display:flex;align-items:center;justify-content:center;
+  font-size:1.8rem;transition:transform .3s;}
+.dropzone:hover .dz-ico{transform:scale(1.08) rotate(-6deg);}
+.dz-title{font-family:var(--fh);font-size:.94rem;font-weight:700;margin-bottom:5px;}
+.dz-sub{font-size:.79rem;color:var(--mid);}
+.dz-sub b{color:var(--teal);}
+.dz-fmts{display:flex;justify-content:center;gap:7px;margin-top:11px;}
+.dz-fmt{font-size:.6rem;font-weight:700;padding:3px 8px;border-radius:100px;
+  background:rgba(255,255,255,.05);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+#fileInput{display:none;}
+
+.preview-box{display:none;border-radius:12px;overflow:hidden;border:1px solid var(--border2);position:relative;}
+.preview-img{width:100%;max-height:200px;object-fit:cover;display:block;}
+.preview-ov{position:absolute;inset:0;background:linear-gradient(to top,rgba(6,8,14,.88) 0%,transparent 55%);}
+.preview-bar{position:absolute;bottom:0;left:0;right:0;padding:10px 13px;
+  display:flex;align-items:center;justify-content:space-between;}
+.preview-nm{font-size:.75rem;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;}
+.preview-rm{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.14);color:#fff;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:.73rem;transition:background .2s;}
+.preview-rm:hover{background:rgba(240,86,74,.6);}
+
+.btn-analyse{width:100%;margin-top:12px;padding:13px;border:none;border-radius:11px;
+  font-family:var(--fh);font-size:.9rem;font-weight:700;cursor:pointer;
+  background:linear-gradient(135deg,var(--teal2),var(--teal));color:#06080e;
+  transition:all .3s;box-shadow:0 6px 20px rgba(0,229,180,.28);position:relative;overflow:hidden;}
+.btn-analyse:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,229,180,.42);}
+.btn-analyse:disabled{opacity:.35;cursor:not-allowed;box-shadow:none;}
+
+.loader-row{display:none;align-items:center;gap:11px;margin-top:12px;padding:12px 15px;
+  background:rgba(0,229,180,.04);border:1px solid rgba(0,229,180,.1);border-radius:11px;}
+.spinner{width:20px;height:20px;border:3px solid rgba(0,229,180,.15);border-top-color:var(--teal);
+  border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-txt{font-size:.8rem;color:var(--mid);}
+.loader-txt b{color:var(--teal);}
+.err-row{display:none;align-items:flex-start;gap:8px;margin-top:12px;padding:10px 14px;
+  background:rgba(240,86,74,.06);border:1px solid rgba(240,86,74,.2);
+  border-radius:11px;font-size:.79rem;color:#fca5a5;line-height:1.6;}
+
+.empty-state{background:var(--s1);border:1px solid var(--border);border-radius:20px;
+  padding:52px 28px;text-align:center;}
+.empty-ico{font-size:2.8rem;opacity:.22;margin-bottom:16px;}
+.empty-title{font-family:var(--fh);font-size:.97rem;font-weight:700;color:var(--mid);margin-bottom:7px;}
+.empty-sub{font-size:.8rem;color:var(--muted);line-height:1.62;}
+.empty-sub b{color:var(--teal);}
+
+.result-panel{display:none;animation:slIn .5s var(--spring) both;}
+@keyframes slIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
+.res-top-card{background:var(--s1);border:1px solid var(--border2);border-radius:20px;overflow:hidden;margin-bottom:12px;}
+.res-top{padding:20px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden;}
+.res-top::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,229,180,.08),rgba(61,142,248,.04));}
+.res-info{position:relative;}
+.res-lbl{font-size:.64rem;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--teal);margin-bottom:6px;}
+.res-name{font-family:var(--fh);font-size:1.65rem;font-weight:800;letter-spacing:-.02em;}
+.res-emoji{font-size:2.6rem;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5));position:relative;}
+.res-body{padding:16px 20px;}
+.conf-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.conf-lbl{font-size:.71rem;color:var(--mid);}
+.conf-val{font-size:.86rem;font-weight:700;color:var(--teal);}
+.conf-track{height:7px;border-radius:100px;background:rgba(255,255,255,.06);overflow:hidden;margin-bottom:15px;}
+.conf-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--teal2),var(--teal));width:0%;transition:width 1.1s var(--ease) .3s;}
+.sev-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 13px;border-radius:100px;
+  font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:13px;}
+.sev-mild{background:rgba(0,229,180,.1);color:var(--teal);border:1px solid rgba(0,229,180,.2);}
+.sev-mod{background:rgba(245,166,35,.1);color:var(--gold);border:1px solid rgba(245,166,35,.2);}
+.sev-sev{background:rgba(240,86,74,.1);color:var(--red);border:1px solid rgba(240,86,74,.2);}
+.sev-chr{background:rgba(155,109,255,.1);color:var(--violet);border:1px solid rgba(155,109,255,.2);}
+.res-desc{font-size:.82rem;color:var(--mid);line-height:1.74;margin-bottom:9px;}
+.res-prev{font-size:.74rem;color:var(--muted);margin-bottom:13px;}
+.res-prev span{color:var(--mid);}
+.res-tip{display:flex;gap:8px;padding:10px 14px;background:rgba(245,166,35,.05);
+  border-left:3px solid var(--gold);border-radius:0 9px 9px 0;
+  font-size:.79rem;color:var(--mid);line-height:1.68;margin-bottom:16px;}
+.scores-lbl{font-size:.64rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.score-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.score-nm{font-size:.74rem;color:var(--mid);width:86px;flex-shrink:0;}
+.score-track{flex:1;height:5px;border-radius:100px;background:rgba(255,255,255,.06);overflow:hidden;}
+.score-fill{height:100%;border-radius:100px;background:rgba(255,255,255,.12);width:0%;transition:width .9s var(--ease);}
+.score-fill.top{background:linear-gradient(90deg,var(--teal2),var(--teal));}
+.score-pct{font-size:.7rem;font-weight:600;color:var(--muted);width:35px;text-align:right;flex-shrink:0;}
+.disc{display:flex;gap:7px;padding:9px 12px;margin-top:13px;
+  background:rgba(240,86,74,.04);border:1px solid rgba(240,86,74,.1);
+  border-radius:9px;font-size:.71rem;color:var(--muted);line-height:1.62;}
+
+/* ═══════════════════════════════════════
+   PAGE 3 — CHAT (side-by-side voice)
+═══════════════════════════════════════ */
+#page-chat{padding-top:62px;}
+.chat-layout{display:flex;flex:1;overflow:hidden;}
+
+/* Left — transcript */
+.chat-left{width:300px;flex-shrink:0;display:flex;flex-direction:column;
+  background:var(--s1);border-right:1px solid var(--border2);overflow:hidden;}
+.cl-hd{padding:12px 15px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:9px;flex-shrink:0;}
+.cl-ico{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.74rem;flex-shrink:0;}
+.cl-ico.mic{background:rgba(240,86,74,.1);border:1px solid rgba(240,86,74,.2);}
+.cl-ico.ai{background:rgba(0,229,180,.1);border:1px solid rgba(0,229,180,.2);}
+.cl-title{font-family:var(--fh);font-size:.82rem;font-weight:700;}
+.cl-sub{font-size:.61rem;color:var(--muted);margin-top:1px;}
+
+.mic-zone{flex-shrink:0;padding:18px 14px;display:flex;flex-direction:column;align-items:center;gap:11px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.16);}
+.mic-wrap{position:relative;width:120px;height:120px;display:flex;align-items:center;justify-content:center;}
+.mic-ring{position:absolute;border-radius:50%;border:2px solid rgba(240,86,74,.0);}
+.mic-ring.r1{width:76px;height:76px;}
+.mic-ring.r2{width:98px;height:98px;}
+.mic-ring.r3{width:120px;height:120px;}
+.listening .mic-ring{border-color:rgba(240,86,74,.35);animation:ringOut 1.4s ease infinite;}
+.listening .mic-ring.r2{animation-delay:.25s;}
+.listening .mic-ring.r3{animation-delay:.5s;}
+@keyframes ringOut{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.1);opacity:0}}
+.mic-btn{width:60px;height:60px;border-radius:50%;background:rgba(240,86,74,.08);
+  border:2px solid rgba(240,86,74,.28);color:var(--red);font-size:1.3rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .28s;
+  position:relative;z-index:2;box-shadow:0 4px 18px rgba(0,0,0,.4);}
+.mic-btn:hover{background:rgba(240,86,74,.16);transform:scale(1.06);}
+.listening .mic-btn{background:rgba(240,86,74,.22);border-color:rgba(240,86,74,.7);
+  animation:micP 1.3s ease infinite;}
+@keyframes micP{0%,100%{box-shadow:0 0 0 0 rgba(240,86,74,.45)}55%{box-shadow:0 0 0 13px rgba(240,86,74,.0)}}
+.mic-lbl{font-size:.74rem;font-weight:600;color:var(--mid);}
+.mic-lbl.rec{color:var(--red);}
+.mic-lbl.ok{color:var(--teal);}
+.swave{display:flex;align-items:center;gap:3px;height:20px;}
+.swave span{width:3px;border-radius:2px;background:var(--red);opacity:.2;height:4px;}
+.swave.live span{opacity:.65;animation:sw .75s ease infinite;}
+.swave.live span:nth-child(1){animation-delay:0s;}
+.swave.live span:nth-child(2){animation-delay:.09s;}
+.swave.live span:nth-child(3){animation-delay:.18s;}
+.swave.live span:nth-child(4){animation-delay:.27s;}
+.swave.live span:nth-child(5){animation-delay:.36s;}
+.swave.live span:nth-child(6){animation-delay:.45s;}
+.swave.live span:nth-child(7){animation-delay:.54s;}
+@keyframes sw{0%,100%{height:3px}50%{height:17px}}
+
+.tr-log{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:7px;}
+.tr-log::-webkit-scrollbar{width:3px;}
+.tr-log::-webkit-scrollbar-thumb{background:rgba(255,255,255,.07);border-radius:3px;}
+.tr-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex:1;gap:7px;opacity:.35;text-align:center;padding:18px;}
+.tr-empty-ico{font-size:1.7rem;}
+.tr-empty-txt{font-size:.71rem;color:var(--muted);line-height:1.62;}
+.tr-item{border-radius:9px;padding:8px 11px;font-size:.77rem;line-height:1.62;animation:trIn .24s ease both;}
+@keyframes trIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+.tr-item.user{background:rgba(240,86,74,.07);border:1px solid rgba(240,86,74,.13);}
+.tr-item.interim{background:rgba(61,142,248,.06);border:1px dashed rgba(61,142,248,.22);color:var(--blue);font-style:italic;}
+.tr-item.info{background:rgba(255,255,255,.02);border:1px solid var(--border);color:var(--muted);}
+.tr-lbl{font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;}
+.tr-item.user .tr-lbl{color:var(--red);}
+.tr-item.interim .tr-lbl{color:var(--blue);}
+.tr-item.info .tr-lbl{color:var(--muted);}
+.tr-ts{font-size:.56rem;color:var(--muted);margin-top:2px;}
+.left-input{flex-shrink:0;padding:9px 11px;border-top:1px solid var(--border);
+  background:rgba(0,0,0,.16);display:flex;gap:7px;align-items:flex-end;}
+.left-ta{flex:1;background:var(--s2);border:1px solid var(--border2);border-radius:10px;
+  padding:8px 12px;color:var(--text);font-family:var(--fb);font-size:.78rem;
+  resize:none;outline:none;min-height:35px;max-height:76px;line-height:1.5;transition:border-color .2s;}
+.left-ta:focus{border-color:rgba(0,229,180,.34);}
+.left-ta::placeholder{color:var(--muted);}
+.snd-btn{width:35px;height:35px;border-radius:9px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--teal2),var(--teal));color:#06080e;
+  display:flex;align-items:center;justify-content:center;font-size:.84rem;
+  transition:all .2s;flex-shrink:0;box-shadow:0 3px 11px rgba(0,229,180,.26);}
+.snd-btn:hover:not(:disabled){transform:scale(1.07);}
+.snd-btn:disabled{opacity:.35;cursor:not-allowed;}
+
+/* Right — messages */
+.chat-right{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.chat-right-hd{padding:12px 15px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:9px;flex-shrink:0;background:var(--s1);}
+.msgs{flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth;}
+.msgs::-webkit-scrollbar{width:4px;}
+.msgs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.07);border-radius:4px;}
+.msg{display:flex;gap:9px;animation:msgIn .3s var(--ease) both;}
+@keyframes msgIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{flex-direction:row-reverse;}
+.msg-av{width:31px;height:31px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.78rem;margin-top:2px;}
+.msg.bot .msg-av{background:linear-gradient(135deg,var(--teal2),var(--teal));box-shadow:0 0 0 3px rgba(0,229,180,.1);}
+.msg.user .msg-av{background:linear-gradient(135deg,#4f46e5,var(--blue));}
+.msg-body{display:flex;flex-direction:column;gap:4px;max-width:80%;}
+.msg.user .msg-body{align-items:flex-end;}
+.msg-bub{padding:10px 14px;border-radius:16px;font-size:.82rem;line-height:1.74;}
+.msg.bot .msg-bub{background:var(--s2);border:1px solid var(--border2);border-bottom-left-radius:4px;color:var(--text);}
+.msg.user .msg-bub{background:linear-gradient(135deg,var(--teal2),var(--teal));color:#06080e;font-weight:500;border-bottom-right-radius:4px;}
+.msg.bot .msg-bub h4{font-family:var(--fh);font-size:.8rem;font-weight:700;color:var(--teal);margin:10px 0 4px;}
+.msg.bot .msg-bub h4:first-child{margin-top:0;}
+.msg.bot .msg-bub strong{color:var(--text);font-weight:600;}
+.msg.bot .msg-bub em{color:var(--gold);font-style:normal;}
+.msg.bot .msg-bub ul{padding-left:14px;margin:4px 0;}
+.msg.bot .msg-bub li{margin-bottom:3px;}
+.msg.bot .msg-bub .pill{display:inline-block;padding:1px 7px;border-radius:100px;background:rgba(0,229,180,.1);border:1px solid rgba(0,229,180,.18);color:var(--teal);font-size:.7rem;font-weight:600;margin:1px 2px;}
+.msg.bot .msg-bub .sdiv{height:1px;background:rgba(255,255,255,.07);margin:7px 0;}
+.msg-foot{display:flex;align-items:center;gap:5px;margin-top:1px;}
+.replay-btn{padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.02);color:var(--muted);font-size:.65rem;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .17s;}
+.replay-btn:hover{background:rgba(0,229,180,.08);border-color:rgba(0,229,180,.2);color:var(--teal);}
+.replay-btn.speaking{background:rgba(0,229,180,.12);border-color:rgba(0,229,180,.28);color:var(--teal);animation:spP .7s ease infinite;}
+@keyframes spP{0%,100%{opacity:1}50%{opacity:.4}}
+.tdots{display:flex;align-items:center;gap:4px;padding:2px 0;}
+.tdots span{width:5px;height:5px;border-radius:50%;background:var(--teal);opacity:.3;animation:td .9s ease infinite;}
+.tdots span:nth-child(2){animation-delay:.2s;}
+.tdots span:nth-child(3){animation-delay:.4s;}
+@keyframes td{0%,80%,100%{opacity:.3;transform:scale(1)}40%{opacity:1;transform:scale(1.4)}}
+
+.tts-bar{display:none;margin:0 22px 8px;padding:7px 13px;border-radius:9px;background:rgba(0,229,180,.07);border:1px solid rgba(0,229,180,.18);font-size:.72rem;color:var(--teal);align-items:center;gap:8px;}
+.tts-bar.show{display:flex;}
+.tts-waves{display:flex;align-items:center;gap:2px;}
+.tts-waves span{display:block;width:3px;border-radius:2px;background:var(--teal);animation:ttsW .7s ease infinite;}
+.tts-waves span:nth-child(1){height:5px;}
+.tts-waves span:nth-child(2){height:11px;animation-delay:.12s;}
+.tts-waves span:nth-child(3){height:15px;animation-delay:.24s;}
+.tts-waves span:nth-child(4){height:11px;animation-delay:.36s;}
+.tts-waves span:nth-child(5){height:5px;animation-delay:.48s;}
+@keyframes ttsW{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.6)}}
+.tts-stop{margin-left:auto;padding:2px 8px;border-radius:5px;border:1px solid rgba(0,229,180,.24);background:rgba(0,229,180,.09);color:var(--teal);font-size:.63rem;cursor:pointer;font-weight:600;}
+.tts-stop:hover{background:rgba(0,229,180,.18);}
+
+.chat-bar{flex-shrink:0;padding:8px 22px;border-top:1px solid var(--border);background:rgba(6,8,14,.7);display:flex;align-items:center;gap:11px;flex-wrap:wrap;position:relative;}
+.csc{display:flex;align-items:center;gap:5px;font-size:.62rem;color:var(--muted);}
+.ckey{padding:2px 5px;border-radius:4px;background:rgba(255,255,255,.06);border:1px solid var(--border2);font-size:.59rem;font-family:monospace;color:var(--mid);}
+.bar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.spd-sel{background:var(--s3);border:1px solid var(--border2);color:var(--mid);border-radius:6px;padding:3px 7px;font-size:.66rem;outline:none;cursor:pointer;}
+.tb-btn{padding:5px 11px;border-radius:7px;border:1px solid var(--border2);background:rgba(255,255,255,.03);color:var(--mid);font-family:var(--fb);font-size:.7rem;font-weight:500;cursor:pointer;transition:all .17s;display:flex;align-items:center;gap:5px;}
+.tb-btn:hover{background:rgba(255,255,255,.07);color:var(--text);}
+.tb-btn.on{background:rgba(0,229,180,.09);border-color:rgba(0,229,180,.2);color:var(--teal);}
+
+.topics-drawer{display:none;position:absolute;bottom:100%;left:0;right:0;z-index:60;
+  background:rgba(8,11,18,.98);border-top:1px solid var(--border2);padding:12px 20px;
+  backdrop-filter:blur(20px);animation:dUp .2s ease;}
+.topics-drawer.open{display:block;}
+@keyframes dUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.td-hd{font-size:.61rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.td-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{padding:5px 12px;border-radius:100px;border:1px solid var(--border2);background:rgba(255,255,255,.03);color:var(--mid);font-size:.72rem;font-weight:500;cursor:pointer;transition:all .16s;display:flex;align-items:center;gap:5px;}
+.chip:hover{background:rgba(0,229,180,.08);border-color:rgba(0,229,180,.22);color:var(--teal);}
+
+/* ═══════════════════════════════════════
+   PAGE 4 — ABOUT
+═══════════════════════════════════════ */
+#page-about .inner{max-width:860px;margin:0 auto;padding:50px 44px 80px;}
+.ab-sec{margin-bottom:48px;}
+.ab-sec-title{font-family:var(--fh);font-size:1.06rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:9px;}
+.ab-sec-title::before{content:'';width:3px;height:17px;background:var(--teal);border-radius:3px;flex-shrink:0;}
+.arch-box{background:var(--s1);border:1px solid var(--border2);border-radius:18px;overflow:hidden;}
+.layer{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--border);transition:background .2s;}
+.layer:last-child{border-bottom:none;}
+.layer:hover{background:rgba(0,229,180,.03);}
+.layer-b{width:32px;height:32px;border-radius:8px;background:rgba(0,229,180,.1);border:1px solid rgba(0,229,180,.18);display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:.68rem;font-weight:800;color:var(--teal);flex-shrink:0;}
+.layer-name{font-family:var(--fh);font-size:.86rem;font-weight:700;flex:1;}
+.layer-detail{font-size:.75rem;color:var(--muted);}
+.layer-arrow{padding:3px 18px;text-align:center;font-size:.85rem;color:var(--border2);background:var(--bg);border-bottom:1px solid var(--border);}
+.lt{background:var(--s1);border:1px solid var(--border2);border-radius:18px;overflow:hidden;}
+.lt-hd{display:grid;grid-template-columns:50px 1fr 58px 128px;padding:9px 18px;background:rgba(255,255,255,.025);border-bottom:1px solid var(--border);font-size:.64rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.lt-row{display:grid;grid-template-columns:50px 1fr 58px 128px;padding:11px 18px;border-bottom:1px solid var(--border);align-items:center;transition:background .2s;}
+.lt-row:last-child{border-bottom:none;}
+.lt-row:hover{background:rgba(255,255,255,.02);}
+.lt-idx{font-family:var(--fh);font-weight:800;color:var(--teal);}
+.lt-name{font-weight:600;font-size:.84rem;}
+.lt-em{font-size:1.05rem;}
+.code-box{background:#040c18;border:1px solid rgba(0,229,180,.12);border-radius:14px;padding:18px 20px;font-family:'Courier New',monospace;font-size:.78rem;line-height:1.8;color:#7788aa;overflow-x:auto;}
+.code-box .cm{color:#2e4058;}
+.code-box .fn{color:#7aadff;}
+.code-box .hl{color:var(--teal);font-weight:700;}
+.tech-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.tech-item{background:var(--s1);border:1px solid var(--border);border-radius:13px;padding:14px;display:flex;align-items:center;gap:10px;transition:all .24s;}
+.tech-item:hover{border-color:rgba(0,229,180,.2);background:rgba(0,229,180,.03);}
+.t-icon{font-size:1.3rem;flex-shrink:0;}
+.t-name{font-family:var(--fh);font-size:.84rem;font-weight:700;}
+.t-role{font-size:.69rem;color:var(--muted);margin-top:2px;}
+.disc-box{background:rgba(245,166,35,.05);border:1px solid rgba(245,166,35,.16);border-radius:14px;padding:18px 20px;display:flex;gap:12px;margin-bottom:36px;}
+.disc-icon{font-size:1.2rem;flex-shrink:0;}
+.disc-text{font-size:.82rem;color:var(--mid);line-height:1.74;}
+.disc-text strong{color:var(--text);}
+
+/* ── Responsive ─────────────────────── */
+@media(max-width:1020px){
+  .nav{padding:0 22px;}
+  .wrap{padding:0 22px;}
+  .hero{padding:72px 22px 60px;}
+  #page-diagnose .inner,#page-about .inner{padding:36px 22px 60px;}
+  .cond-grid{grid-template-columns:repeat(3,1fr);}
+}
+@media(max-width:900px){
+  .two-col{grid-template-columns:1fr;}
+  .chat-left{display:none!important;}
+  .msgs{padding:14px;}
+  .steps{grid-template-columns:1fr;}
+  .step:first-child{border-radius:14px 14px 0 0;}
+  .step:last-child{border-radius:0 0 14px 14px;}
+}
+/* Always show mic input row in chat bar when left panel hidden */
+.chat-input-row{display:none;flex-shrink:0;padding:8px 18px 4px;border-top:1px solid var(--border);background:rgba(6,8,14,.7);gap:8px;align-items:flex-end;}
+@media(max-width:900px){.chat-input-row{display:flex;}}
+@media(max-width:900px){.chat-left{display:none!important;}}
+@media(max-width:600px){
+  .nav-link{display:none;}
+  .stats{grid-template-columns:1fr 1fr;}
+  .stat:nth-child(2){border-right:none;}
+  .hero-btns{flex-direction:column;align-items:center;}
+  .cond-grid{grid-template-columns:1fr 1fr;}
+  .cta-box{padding:36px 20px;}
+  .tech-grid{grid-template-columns:1fr 1fr;}
+  .footer{padding:18px 22px;}
+}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+
+<!-- ═══ NAV ═══ -->
+<nav class="nav">
+  <div class="nav-brand" onclick="go('home')">
+    <div class="nav-dot">🩺</div>
+    Derm<b>AI</b>
+  </div>
+  <div class="nav-link" id="nl-home"     onclick="go('home')"    >Home</div>
+  <div class="nav-link" id="nl-diagnose" onclick="go('diagnose')">Diagnose</div>
+  <div class="nav-link" id="nl-chat"     onclick="go('chat')"    >AI Chat</div>
+  <div class="nav-link" id="nl-about"    onclick="go('about')"   >About</div>
+  <button class="nav-cta" onclick="go('diagnose')">Analyse Skin →</button>
+</nav>
+
+<!-- ═══════════════════════════════════════
+     PAGE 1 — HOME
+═══════════════════════════════════════ -->
+<div class="page" id="page-home">
+  <div class="hero">
+    <div class="hero-pill">🧬 CNN-Powered Dermatology AI</div>
+    <h1 class="hero-h1">Detect Skin Diseases<br><span class="gr">Instantly with AI</span></h1>
+    <p class="hero-p">Upload a photo of your skin condition. Our trained CNN model analyses it in under 2 seconds and delivers a full diagnosis with confidence scores and care guidance.</p>
+    <div class="hero-btns">
+      <button class="btn-p" onclick="go('diagnose')">🔬 Analyse My Skin</button>
+      <button class="btn-g" onclick="go('chat')">💬 Ask AI Expert</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-n">5</div><div class="stat-l">Conditions</div></div>
+      <div class="stat"><div class="stat-n">~70%</div><div class="stat-l">Accuracy</div></div>
+      <div class="stat"><div class="stat-n">&lt;2s</div><div class="stat-l">Response</div></div>
+      <div class="stat"><div class="stat-n">CNN</div><div class="stat-l">Architecture</div></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="steps-sec">
+      <div class="tag">How It Works</div>
+      <h2 class="h1">Three steps to a diagnosis</h2>
+      <p class="sub">Your image is processed by a trained CNN and returns a full report in seconds.</p>
+      <div class="steps">
+        <div class="step"><div class="step-n">01</div><div class="step-ico">📸</div><div class="step-title">Upload Photo</div><div class="step-desc">Take a clear close-up of the affected area. JPG, PNG or WEBP up to 16 MB.</div></div>
+        <div class="step"><div class="step-n">02</div><div class="step-ico">🧠</div><div class="step-title">CNN Inference</div><div class="step-desc">Image is resized to 64×64 and passed through Conv2D → MaxPool → Dense → Softmax.</div></div>
+        <div class="step"><div class="step-n">03</div><div class="step-ico">📋</div><div class="step-title">Full Report</div><div class="step-desc">Get condition name, confidence %, severity, care tip and all 5 class probability scores.</div></div>
+      </div>
+    </section>
+
+    <section class="conds-sec">
+      <div class="tag">Detectable Conditions</div>
+      <h2 class="h1">5 conditions detected by the model</h2>
+      <div class="cond-grid">
+        <div class="cond"><span class="cond-em">🔴</span><div class="cond-name">Acne</div><div class="cond-desc">Inflammatory follicle condition. Common in adolescents and adults.</div><span class="badge b-mild">Mild–Moderate</span></div>
+        <div class="cond"><span class="cond-em">🟤</span><div class="cond-name">Melanoma</div><div class="cond-desc">Serious skin cancer — requires immediate medical attention.</div><span class="badge b-sev">Severe</span></div>
+        <div class="cond"><span class="cond-em">🟡</span><div class="cond-name">Peeling Skin</div><div class="cond-desc">Surface shedding from sunburn, dryness or immune reactions.</div><span class="badge b-mild">Mild</span></div>
+        <div class="cond"><span class="cond-em">🟠</span><div class="cond-name">Ring Worm</div><div class="cond-desc">Contagious fungal infection with ring-shaped, itchy rashes.</div><span class="badge b-mod">Moderate</span></div>
+        <div class="cond"><span class="cond-em">⚪</span><div class="cond-name">Vitiligo</div><div class="cond-desc">Autoimmune pigment loss causing white patches on skin.</div><span class="badge b-chr">Chronic</span></div>
+      </div>
+    </section>
+
+    <section class="cta-sec">
+      <div class="cta-box">
+        <h2 class="h1">Ready to analyse your skin?</h2>
+        <p class="sub">Upload a photo for instant AI diagnosis, or chat with our AI dermatologist for advice.</p>
+        <div class="hero-btns" style="margin-bottom:0">
+          <button class="btn-p" onclick="go('diagnose')">🔬 Start Free Analysis</button>
+          <button class="btn-g" onclick="go('chat')">💬 Talk to AI Expert</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <div class="foot-brand">Derm<b>AI</b></div>
+    <div class="foot-note">⚠️ Educational use only · Not a substitute for professional medical advice · Always consult a dermatologist</div>
+  </footer>
+</div>
+
+<!-- ═══════════════════════════════════════
+     PAGE 2 — DIAGNOSE
+═══════════════════════════════════════ -->
+<div class="page" id="page-diagnose">
+  <div class="inner">
+    <div class="page-hdr">
+      <div class="page-tag">CNN Inference Engine</div>
+      <h1 class="page-h1">Skin Disease Diagnosis</h1>
+      <p class="page-sub">Upload a skin photo — AI will detect the condition and return a full report instantly.</p>
+    </div>
+    <div class="two-col">
+
+      <!-- Upload card -->
+      <div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-ico">🔬</div>
+            <div>
+              <div class="card-hd-t">Image Upload</div>
+              <div class="card-hd-s">JPG · PNG · WEBP · Max 16 MB</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="srv-row checking" id="srvRow">
+              <div class="srv-dot"></div><span id="srvTxt">Checking AI connection…</span>
+            </div>
+            <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+              <div class="dz-ico">🩺</div>
+              <div class="dz-title">Drop your skin image here</div>
+              <div class="dz-sub">or <b>click to browse</b> files</div>
+              <div class="dz-fmts"><span class="dz-fmt">jpg</span><span class="dz-fmt">png</span><span class="dz-fmt">webp</span></div>
+            </div>
+            <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.webp"/>
+            <div class="preview-box" id="previewBox">
+              <img class="preview-img" id="previewImg" src="" alt=""/>
+              <div class="preview-ov"></div>
+              <div class="preview-bar">
+                <span class="preview-nm" id="previewNm"></span>
+                <button class="preview-rm" onclick="clearFile()">✕</button>
+              </div>
+            </div>
+            <button class="btn-analyse" id="analyseBtn" disabled onclick="runAnalysis()">🔍&nbsp;&nbsp;Analyse with AI</button>
+            <div class="loader-row" id="loaderRow">
+              <div class="spinner"></div>
+              <div class="loader-txt">Analysing with <b>AI</b>…</div>
+            </div>
+            <div class="err-row" id="errRow"><span>⚠️</span><span id="errMsg"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result card -->
+      <div>
+        <div class="empty-state" id="emptyState">
+          <div class="empty-ico">📊</div>
+          <div class="empty-title">No analysis yet</div>
+          <div class="empty-sub">Upload a skin image and click <b>Analyse with AI</b> to see your full diagnosis here.</div>
+        </div>
+        <div class="result-panel" id="resultPanel">
+          <div class="res-top-card">
+            <div class="res-top">
+              <div class="res-info">
+                <div class="res-lbl">Detected Condition</div>
+                <div class="res-name" id="rName">—</div>
+              </div>
+              <div class="res-emoji" id="rEmoji">🔬</div>
+            </div>
+            <div class="res-body">
+              <div class="conf-hdr"><span class="conf-lbl">Confidence</span><span class="conf-val" id="rConf">—</span></div>
+              <div class="conf-track"><div class="conf-fill" id="rConfBar"></div></div>
+              <div><span class="sev-badge" id="rSev">—</span></div>
+              <p class="res-desc" id="rDesc">—</p>
+              <div class="res-prev">📊 Prevalence: <span id="rPrev">—</span></div>
+              <div class="res-tip"><span>💡</span><span id="rTip">—</span></div>
+              <div class="scores-lbl">All Condition Scores</div>
+              <div id="rScores"></div>
+              <div class="disc"><span style="color:var(--red);flex-shrink:0">⚠</span><span>Educational use only. Not a substitute for professional medical diagnosis. Consult a dermatologist.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <footer class="footer" style="margin-top:40px">
+    <div class="foot-brand">Derm<b>AI</b></div>
+    <div class="foot-note">CNN · TensorFlow · Keras · Flask · Claude AI</div>
+  </footer>
+</div>
+
+<!-- ═══════════════════════════════════════
+     PAGE 3 — CHAT (side-by-side voice)
+═══════════════════════════════════════ -->
+<div class="page" id="page-chat">
+  <div class="chat-layout">
+
+    <!-- LEFT: Voice Transcript -->
+    <div class="chat-left">
+      <div class="cl-hd">
+        <div class="cl-ico mic">🎙️</div>
+        <div><div class="cl-title">Voice Transcript</div><div class="cl-sub">Real-time speech-to-text</div></div>
+      </div>
+      <div class="mic-zone">
+        <div class="mic-wrap" id="micWrap">
+          <button class="mic-btn" id="micBtn" onclick="toggleMic()">🎙️</button>
+          <div class="mic-ring r1"></div>
+          <div class="mic-ring r2"></div>
+          <div class="mic-ring r3"></div>
+        </div>
+        <div class="mic-lbl" id="micLbl">Click to speak</div>
+        <div class="swave" id="swave"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      </div>
+      <div class="tr-log" id="trLog">
+        <div class="tr-empty" id="trEmpty">
+          <div class="tr-empty-ico">🎙️</div>
+          <div class="tr-empty-txt">Click the mic above and speak.<br/>Words appear here live.</div>
+        </div>
+      </div>
+      <div class="left-input">
+        <textarea class="left-ta" id="chatInput" rows="1"
+          placeholder="Or type here… (Enter to send)"
+          onkeydown="chatKey(event)" oninput="chatResize(this)"></textarea>
+        <button class="snd-btn" id="sendBtn" onclick="chatSend()">➤</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: AI Responses -->
+    <div class="chat-right">
+      <div class="chat-right-hd">
+        <div class="cl-ico ai">🤖</div>
+        <div><div class="cl-title">AI Dermatologist Response</div><div class="cl-sub">Displayed &amp; read aloud automatically</div></div>
+        <div style="margin-left:auto;display:flex;gap:7px">
+          <button class="tb-btn on" id="autoSpeakBtn" onclick="toggleAutoSpeak()">🔊 Auto-speak</button>
+          <button class="tb-btn" onclick="clearChat()">🗑 Clear</button>
+        </div>
+      </div>
+
+      <!-- Mic help banner -->
+      <div id="micHelpBanner" style="
+        display:flex;align-items:flex-start;gap:12px;
+        padding:11px 18px;
+        background:rgba(245,166,35,.06);
+        border-bottom:1px solid rgba(245,166,35,.18);
+        font-size:.78rem;color:var(--mid);line-height:1.6;
+        flex-shrink:0;
+      ">
+        <span style="font-size:1.1rem;flex-shrink:0;margin-top:1px">🎙️</span>
+        <div>
+          <strong style="color:var(--gold)">Microphone requires browser permission.</strong>
+          The mic button works when the file is opened <strong>directly in Chrome/Edge</strong>, not inside this preview panel.<br>
+          <span style="color:var(--muted)">
+            👉 <strong style="color:var(--text)">Step 1:</strong> Download the file below &nbsp;
+            👉 <strong style="color:var(--text)">Step 2:</strong> Double-click to open in Chrome &nbsp;
+            👉 <strong style="color:var(--text)">Step 3:</strong> Click Allow when browser asks for mic access
+          </span>
+        </div>
+        <button onclick="document.getElementById('micHelpBanner').style.display='none'" style="margin-left:auto;flex-shrink:0;background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;padding:0 4px;line-height:1">✕</button>
+      </div>
+
+      <div class="msgs" id="chatMsgs">
+        <div class="msg bot">
+          <div class="msg-av">🩺</div>
+          <div class="msg-body">
+            <div class="msg-bub">
+              <h4>👋 Hello! I'm your DermAI Voice Assistant</h4>
+              This chatbot shows <strong>two panels side by side</strong>:
+              <div class="sdiv"></div>
+              <ul>
+                <li><strong>Left 🎙️</strong> — your voice transcript appears live as you speak</li>
+                <li><strong>Right 🤖</strong> — AI response shown here and read aloud</li>
+              </ul>
+              <div class="sdiv"></div>
+              Click the <strong>microphone</strong> on the left to speak, or use <strong>Topics</strong> to pick a question!
+            </div>
+            <div class="msg-foot">
+              <button class="replay-btn" data-raw="Welcome%20to%20DermAI.%20Click%20the%20microphone%20on%20the%20left%20to%20speak%20your%20skin%20question." onclick="handleReplay(this)">🔊 Listen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tts-bar" id="ttsBar">
+        <div class="tts-waves"><span></span><span></span><span></span><span></span><span></span></div>
+        <span>Speaking response…</span>
+        <button class="tts-stop" onclick="stopSpeaking()">⏹ Stop</button>
+      </div>
+
+      <!-- Mobile/narrow: inline mic + text input (shown when left panel is hidden) -->
+      <div class="chat-input-row" id="chatInputRowMobile">
+        <button class="mic-btn" id="micBtnMobile" onclick="toggleMic()" title="Click to speak" style="width:40px;height:40px;font-size:1.1rem;flex-shrink:0;border-radius:50%;background:rgba(240,86,74,.08);border:2px solid rgba(240,86,74,.3);color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .25s;">🎙️</button>
+        <textarea class="left-ta" id="chatInputMobile" rows="1"
+          placeholder="Type or speak your question… (Enter to send)"
+          onkeydown="chatKeyMobile(event)" oninput="chatResize(this)"></textarea>
+        <button class="snd-btn" id="sendBtnMobile" onclick="chatSendMobile()">➤</button>
+      </div>
+      <div id="micStatusMobile" style="display:none;padding:4px 18px 6px;font-size:.71rem;color:var(--red);display:flex;align-items:center;gap:6px;background:rgba(240,86,74,.04);border-top:1px solid rgba(240,86,74,.1);">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red);animation:blink 1s ease infinite;flex-shrink:0;"></span>
+        <span id="micStatusMobileTxt">Listening — speak now…</span>
+      </div>
+
+      <div class="chat-bar">
+        <div class="csc"><span class="ckey">Enter</span> Send</div>
+        <div class="csc"><span class="ckey">Shift+Enter</span> New line</div>
+        <div class="csc">🎙️ Mic on left &nbsp; 🔊 Replies read aloud</div>
+        <div class="bar-right">
+          <span style="font-size:.62rem;color:var(--muted)">Speed:</span>
+          <select class="spd-sel" id="speedSel"><option value="0.8">Slow</option><option value="0.95" selected>Normal</option><option value="1.2">Fast</option><option value="1.5">Very fast</option></select>
+          <button class="tb-btn" id="topicsBtn" onclick="toggleTopics()">💬 Topics</button>
+        </div>
+        <div class="topics-drawer" id="topicsDrawer">
+          <div class="td-hd">Quick Topics — click to ask</div>
+          <div class="td-chips">
+            <div class="chip" onclick="quickAsk('What causes acne and how do I treat it?')">🔴 Acne</div>
+            <div class="chip" onclick="quickAsk('What are melanoma warning signs?')">⚠️ Melanoma</div>
+            <div class="chip" onclick="quickAsk('How to treat ringworm fast?')">🟠 Ringworm</div>
+            <div class="chip" onclick="quickAsk('What are vitiligo treatment options?')">⚪ Vitiligo</div>
+            <div class="chip" onclick="quickAsk('Why is my skin peeling?')">🟡 Peeling</div>
+            <div class="chip" onclick="quickAsk('Best sunscreen for oily skin?')">☀️ Sunscreen</div>
+            <div class="chip" onclick="quickAsk('Best moisturizer for dry skin?')">💧 Moisturizer</div>
+            <div class="chip" onclick="quickAsk('Explain niacinamide, retinol and hyaluronic acid')">🧪 Ingredients</div>
+            <div class="chip" onclick="quickAsk('Daily skincare routine for combination skin?')">🌿 Routine</div>
+            <div class="chip" onclick="quickAsk('What ingredients to avoid for acne-prone skin?')">🚫 Avoid list</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     PAGE 4 — ABOUT
+═══════════════════════════════════════ -->
+<div class="page" id="page-about">
+  <div class="inner">
+    <div class="page-hdr" style="margin-bottom:44px">
+      <div class="page-tag">About the Project</div>
+      <h1 class="page-h1">How DermAI Works</h1>
+      <p class="page-sub" style="max-width:600px">A CNN-powered skin disease detection system built with TensorFlow/Keras and Flask, with a voice-enabled Claude AI chatbot for dermatology advice.</p>
+    </div>
+
+    <div class="ab-sec">
+      <div class="ab-sec-title">CNN Architecture</div>
+      <div class="arch-box">
+        <div class="layer"><div class="layer-b">IN</div><div class="layer-name">Input</div><div class="layer-detail">64 × 64 × 3 RGB — resized on server</div></div>
+        <div class="layer-arrow">↓</div>
+        <div class="layer"><div class="layer-b">C1</div><div class="layer-name">Conv2D</div><div class="layer-detail">32 filters · 3×3 kernel · stride (3,3) · ReLU activation</div></div>
+        <div class="layer-arrow">↓</div>
+        <div class="layer"><div class="layer-b">P1</div><div class="layer-name">MaxPooling2D</div><div class="layer-detail">Pool 2×2 → 11×11×32 = 3,872 features</div></div>
+        <div class="layer-arrow">↓</div>
+        <div class="layer"><div class="layer-b">FL</div><div class="layer-name">Flatten</div><div class="layer-detail">3,872 features → 1D vector</div></div>
+        <div class="layer-arrow">↓</div>
+        <div class="layer"><div class="layer-b">D1</div><div class="layer-name">Dense — Hidden</div><div class="layer-detail">500 units · ReLU activation</div></div>
+        <div class="layer-arrow">↓</div>
+        <div class="layer"><div class="layer-b">OUT</div><div class="layer-name">Dense — Output</div><div class="layer-detail">5 units · Softmax → class probabilities</div></div>
+      </div>
+    </div>
+
+    <div class="ab-sec">
+      <div class="ab-sec-title">Class Labels</div>
+      <div class="lt">
+        <div class="lt-hd"><span>Index</span><span>Disease</span><span>Icon</span><span>Severity</span></div>
+        <div class="lt-row"><span class="lt-idx">0</span><span class="lt-name">Acne</span><span class="lt-em">🔴</span><span><span class="badge b-mild">Mild–Moderate</span></span></div>
+        <div class="lt-row"><span class="lt-idx">1</span><span class="lt-name">Melanoma</span><span class="lt-em">🟤</span><span><span class="badge b-sev">Severe</span></span></div>
+        <div class="lt-row"><span class="lt-idx">2</span><span class="lt-name">Peeling skin</span><span class="lt-em">🟡</span><span><span class="badge b-mild">Mild</span></span></div>
+        <div class="lt-row"><span class="lt-idx">3</span><span class="lt-name">Ring worm</span><span class="lt-em">🟠</span><span><span class="badge b-mod">Moderate</span></span></div>
+        <div class="lt-row"><span class="lt-idx">4</span><span class="lt-name">Vitiligo</span><span class="lt-em">⚪</span><span><span class="badge b-chr">Chronic</span></span></div>
+      </div>
+    </div>
+
+    <div class="ab-sec">
+      <div class="ab-sec-title">Preprocessing (Critical Note)</div>
+      <div class="code-box">
+<span class="cm"># ⚠  NO /255 normalisation — matches original working prediction pipeline</span>
+img   = keras_image.<span class="fn">load_img</span>(filepath, target_size=(<span class="hl">64</span>, <span class="hl">64</span>))
+x     = keras_image.<span class="fn">img_to_array</span>(img)    <span class="cm"># shape: (64, 64, 3)</span>
+x     = np.<span class="fn">expand_dims</span>(x, axis=<span class="hl">0</span>)         <span class="cm"># shape: (1, 64, 64, 3)</span>
+preds = model.<span class="fn">predict</span>(x, verbose=<span class="hl">0</span>)         <span class="cm"># shape: (1, 5)</span>
+label = INDEX[np.<span class="fn">argmax</span>(preds, axis=<span class="hl">1</span>)[<span class="hl">0</span>]]
+      </div>
+    </div>
+
+    <div class="ab-sec">
+      <div class="ab-sec-title">Technology Stack</div>
+      <div class="tech-grid">
+        <div class="tech-item"><span class="t-icon">🐍</span><div><div class="t-name">Python 3</div><div class="t-role">Core language</div></div></div>
+        <div class="tech-item"><span class="t-icon">🧠</span><div><div class="t-name">TensorFlow / Keras</div><div class="t-role">CNN model & inference</div></div></div>
+        <div class="tech-item"><span class="t-icon">⚗️</span><div><div class="t-name">Flask</div><div class="t-role">Backend server & REST API</div></div></div>
+        <div class="tech-item"><span class="t-icon">🔢</span><div><div class="t-name">NumPy</div><div class="t-role">Array processing</div></div></div>
+        <div class="tech-item"><span class="t-icon">🎨</span><div><div class="t-name">HTML / CSS / JS</div><div class="t-role">SPA frontend</div></div></div>
+        <div class="tech-item"><span class="t-icon">🤖</span><div><div class="t-name">Claude AI</div><div class="t-role">Vision analysis & voice chatbot</div></div></div>
+      </div>
+    </div>
+
+    <div class="disc-box">
+      <span class="disc-icon">⚠️</span>
+      <div class="disc-text"><strong>Educational Use Only.</strong> DermAI is a machine learning demonstration. The CNN has ~70% accuracy and <strong>must not be used for real medical diagnosis</strong>. Always consult a licensed dermatologist for any skin concern.</div>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn-p" onclick="go('diagnose')">🔬 Try Skin Analysis</button>
+      <button class="btn-g" onclick="go('chat')">💬 Talk to AI Expert</button>
+    </div>
+  </div>
+  <footer class="footer" style="margin-top:48px">
+    <div class="foot-brand">Derm<b>AI</b></div>
+    <div class="foot-note">CNN · TensorFlow · Keras · Flask · Claude AI · Web Speech API</div>
+  </footer>
+</div>
+
+<!-- ═══════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════ -->
+<script>
+/* ── Router ─── */
+let curPage = 'home';
+function go(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('show'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('on'));
+  document.getElementById('page-' + page).classList.add('show');
+  const nl = document.getElementById('nl-' + page);
+  if (nl) nl.classList.add('on');
+  curPage = page;
+  window.scrollTo(0, 0);
+  if (page === 'chat')     initChat();
+  if (page === 'diagnose') initDiagnose();
+  if (page === 'about')    revealAbout();
+}
+
+/* ── Diagnose page ─── */
+let selFile = null, flaskOK = false;
+function initDiagnose() { checkFlask(); }
+
+async function checkFlask() {
+  const row = document.getElementById('srvRow');
+  const txt = document.getElementById('srvTxt');
+  const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  if (!isLocal) {
+    row.className = 'srv-row ai-mode';
+    txt.textContent = '🤖 Preview mode — Claude Vision AI will analyse your image';
+    return;
+  }
+  try {
+    row.className = 'srv-row checking';
+    txt.textContent = 'Connecting to Flask server…';
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 4000);
+    const r = await fetch('/health', { signal: ctrl.signal });
+    const d = await r.json();
+    if (d.ok && d.model) {
+      flaskOK = true; row.className = 'srv-row online';
+      txt.textContent = '✓ Flask online — CNN model loaded and ready';
+    } else {
+      row.className = 'srv-row offline';
+      txt.textContent = '⚠ Server running but model not loaded';
+    }
+  } catch {
+    flaskOK = false; row.className = 'srv-row ai-mode';
+    txt.textContent = '🤖 Flask not detected — using Claude Vision AI';
+  }
+}
+
+const dz = document.getElementById('dropzone');
+const fi = document.getElementById('fileInput');
+['dragover','dragenter'].forEach(e => dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.add('over'); }));
+['dragleave','dragend','drop'].forEach(e => dz.addEventListener(e, () => dz.classList.remove('over')));
+dz.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+fi.addEventListener('change', () => { if (fi.files[0]) loadFile(fi.files[0]); });
+
+function loadFile(f) {
+  if (!['image/jpeg','image/jpg','image/png','image/webp'].includes(f.type)) { showErr('Please upload JPG, PNG or WEBP.'); return; }
+  if (f.size > 16*1024*1024) { showErr('File too large — max 16 MB.'); return; }
+  selFile = f;
+  const r = new FileReader();
+  r.onload = ev => {
+    document.getElementById('previewImg').src = ev.target.result;
+    document.getElementById('previewNm').textContent = f.name;
+    dz.style.display = 'none';
+    document.getElementById('previewBox').style.display = 'block';
+    document.getElementById('analyseBtn').disabled = false;
+    resetDiag();
+  };
+  r.readAsDataURL(f);
+}
+function clearFile() {
+  selFile = null; fi.value = '';
+  dz.style.display = 'block';
+  document.getElementById('previewBox').style.display = 'none';
+  document.getElementById('analyseBtn').disabled = true;
+  document.getElementById('analyseBtn').textContent = '🔍\u00a0\u00a0Analyse with AI';
+  resetDiag();
+  document.getElementById('emptyState').style.display = 'block';
+  document.getElementById('resultPanel').style.display = 'none';
+}
+function resetDiag() {
+  document.getElementById('loaderRow').style.display = 'none';
+  document.getElementById('errRow').style.display = 'none';
+}
+function showErr(m) {
+  resetDiag();
+  document.getElementById('errMsg').textContent = m;
+  document.getElementById('errRow').style.display = 'flex';
+}
+async function runAnalysis() {
+  if (!selFile) return;
+  resetDiag();
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('resultPanel').style.display = 'none';
+  document.getElementById('loaderRow').style.display = 'flex';
+  document.getElementById('analyseBtn').disabled = true;
+  document.getElementById('analyseBtn').textContent = '⟳\u00a0\u00a0Analysing…';
+  try {
+    flaskOK ? await analyseFlask() : await analyseClaude();
+  } finally {
+    document.getElementById('analyseBtn').disabled = false;
+    document.getElementById('analyseBtn').textContent = '🔍\u00a0\u00a0Analyse Again';
+  }
+}
+async function analyseFlask() {
+  const form = new FormData(); form.append('image', selFile);
+  try {
+    const r = await fetch('/api/predict', { method:'POST', body:form });
+    const ct = r.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) throw new Error('Server error — is python app.py running?');
+    const d = await r.json();
+    document.getElementById('loaderRow').style.display = 'none';
+    if (!d.success) { showErr(d.error || 'CNN prediction failed.'); return; }
+    renderResult(d);
+  } catch(e) { document.getElementById('loaderRow').style.display='none'; showErr(e.message); }
+}
+async function analyseClaude() {
+  try {
+    const b64 = await new Promise((res,rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(fr.result.split(',')[1]); fr.onerror = rej;
+      fr.readAsDataURL(selFile);
+    });
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:500,
+        system:`You are a dermatology AI. Classify skin images into exactly one of: Acne, Melanoma, Peeling skin, Ring worm, Vitiligo.
+Return ONLY valid JSON (no markdown, no backticks):
+{"disease":"<label>","confidence":<60-95>,"scores":{"Acne":<n>,"Melanoma":<n>,"Peeling skin":<n>,"Ring worm":<n>,"Vitiligo":<n>},"severity":"<Mild|Mild-Moderate|Moderate|Severe|Chronic>","description":"<1 sentence>","tip":"<1 care tip>","prevalence":"<stat>"}
+All 5 scores must sum to 100. disease must match highest score key.`,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:selFile.type||'image/jpeg',data:b64}},
+          {type:'text',text:'Classify this skin image. Return JSON only.'}
+        ]}]
+      })
+    });
+    const api = await r.json();
+    document.getElementById('loaderRow').style.display = 'none';
+    const raw = (api.content?.[0]?.text||'').replace(/```json|```/g,'').trim();
+    let p; try { p = JSON.parse(raw); } catch { throw new Error('Could not parse AI response — try again.'); }
+    p.severity = (p.severity||'').replace('Mild-Moderate','Mild–Moderate');
+    const EM = {'Acne':'🔴','Melanoma':'🟤','Peeling skin':'🟡','Ring worm':'🟠','Vitiligo':'⚪'};
+    p.emoji = EM[p.disease]||'🔬'; p.success = true;
+    renderResult(p);
+    const row = document.getElementById('srvRow');
+    row.className = 'srv-row ai-mode';
+    document.getElementById('srvTxt').textContent = '🤖 Analysed with Claude Vision AI · Run python app.py for CNN mode';
+  } catch(e) { document.getElementById('loaderRow').style.display='none'; showErr('AI error: '+(e.message||'Unknown')); }
+}
+function renderResult(d) {
+  document.getElementById('rName').textContent = d.disease;
+  document.getElementById('rEmoji').textContent = d.emoji||'🔬';
+  document.getElementById('rConf').textContent = d.confidence.toFixed(1)+'%';
+  document.getElementById('rDesc').textContent = d.description;
+  document.getElementById('rPrev').textContent = d.prevalence||'—';
+  document.getElementById('rTip').textContent = d.tip;
+  const bar = document.getElementById('rConfBar');
+  bar.style.width = '0%';
+  requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = Math.min(d.confidence,100)+'%'; }));
+  const sm = {'Mild':'sev-mild','Mild–Moderate':'sev-mild','Moderate':'sev-mod','Severe':'sev-sev','Chronic':'sev-chr'};
+  const se = document.getElementById('rSev');
+  se.textContent = d.severity||'—'; se.className = 'sev-badge '+(sm[d.severity]||'sev-mild');
+  const sc = document.getElementById('rScores'); sc.innerHTML = '';
+  const sorted = Object.entries(d.scores).sort((a,b)=>b[1]-a[1]);
+  sorted.forEach(([lbl,pct],i) => {
+    const isTop = lbl===d.disease;
+    const div = document.createElement('div'); div.className = 'score-row';
+    div.innerHTML = `<span class="score-nm">${lbl}</span><div class="score-track"><div class="score-fill${isTop?' top':''}" id="sf${i}" style="transition-delay:${.08+i*.09}s"></div></div><span class="score-pct">${pct.toFixed(1)}%</span>`;
+    sc.appendChild(div);
+  });
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    sorted.forEach(([,pct],i) => { const el=document.getElementById('sf'+i); if(el) el.style.width=pct+'%'; });
+  }));
+  document.getElementById('resultPanel').style.display = 'block';
+  document.getElementById('emptyState').style.display = 'none';
+}
+
+/* ── Chat & Voice ─── */
+let chatHistory=[], chatBusy=false, autoSpeak=true, topicsOpen=false, chatInited=false;
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition=null, isListening=false;
+
+function initChat() {
+  if (!chatInited) {
+    chatInited = true;
+    if (window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+      if (window.speechSynthesis.onvoiceschanged !== undefined)
+        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
+  }
+  setTimeout(() => document.getElementById('chatInputMobile')?.focus(), 200);
+}
+
+function initSTT() {
+  if (!SR) {
+    ['micBtn','micBtnMobile'].forEach(id=>{
+      const b=document.getElementById(id);
+      if(b){b.disabled=true;b.style.opacity='.3';b.title='Speech not supported — use Chrome';}
+    });
+    return;
+  }
+  if (recognition) return; // already inited
+  recognition = new SR();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    isListening = true;
+    syncMicBtns('⏹','.85rem');
+    // Style active mic button
+    const mb = document.getElementById('micBtnMobile');
+    if(mb){ mb.style.background='rgba(240,86,74,.22)'; mb.style.borderColor='rgba(240,86,74,.7)'; }
+    document.getElementById('micWrap')?.classList.add('listening');
+    document.getElementById('swave')?.classList.add('live');
+    setMicLbl('Listening…','rec');
+    // Show mobile status bar
+    const msb = document.getElementById('micStatusMobile');
+    if(msb) msb.style.display='flex';
+    const te = document.getElementById('trEmpty');
+    if(te) te.style.display = 'none';
+    addTr('info','🎙 Microphone open — speak now…');
+  };
+
+  let intId = null;
+  recognition.onresult = (e) => {
+    let final='', interim='';
+    for (let i=e.resultIndex; i<e.results.length; i++) {
+      const t=e.results[i][0].transcript;
+      e.results[i].isFinal ? (final+=t) : (interim+=t);
+    }
+    const preview = final||interim;
+    const ci = document.getElementById('chatInput');
+    const cm = document.getElementById('chatInputMobile');
+    if(ci){ ci.value=preview; chatResize(ci); }
+    if(cm){ cm.value=preview; chatResize(cm); }
+
+    if (intId) {
+      const el=document.getElementById(intId);
+      if (el) el.querySelector('.tr-text').textContent = '"'+preview+'"';
+    } else { intId = addTr('interim','"'+preview+'"'); }
+
+    if (final) {
+      setMicLbl('Got it!','ok');
+      if (intId) {
+        const el=document.getElementById(intId);
+        if (el) { el.className='tr-item user'; el.querySelector('.tr-lbl').textContent='You said'; }
+        intId = null;
+      }
+    }
+  };
+
+  recognition.onend = () => {
+    isListening = false;
+    syncMicBtns('🎙️','');
+    const mb = document.getElementById('micBtnMobile');
+    if(mb){ mb.style.background=''; mb.style.borderColor=''; }
+    document.getElementById('micWrap')?.classList.remove('listening');
+    document.getElementById('swave')?.classList.remove('live');
+    setMicLbl('Click to speak','');
+    const msb = document.getElementById('micStatusMobile');
+    if(msb) msb.style.display='none';
+    const ci = document.getElementById('chatInput');
+    const cm = document.getElementById('chatInputMobile');
+    const text = (ci ? ci.value : cm ? cm.value : '').trim();
+    if (text) setTimeout(chatSend, 280);
+    else addTr('info','Nothing heard — try again.');
+  };
+
+  recognition.onerror = (e) => {
+    isListening = false;
+    syncMicBtns('🎙️','');
+    const mb = document.getElementById('micBtnMobile');
+    if(mb){ mb.style.background=''; mb.style.borderColor=''; }
+    document.getElementById('micWrap')?.classList.remove('listening');
+    document.getElementById('swave')?.classList.remove('live');
+    setMicLbl('Click to speak','');
+    const msb = document.getElementById('micStatusMobile');
+    if(msb) msb.style.display='none';
+    const msgs={
+      'no-speech':'No speech detected — try speaking louder.',
+      'audio-capture':'No microphone found.',
+      'not-allowed':'Mic permission denied — allow it in browser settings.',
+      'network':'Network error during speech recognition.'
+    };
+    addTr('info','⚠ '+(msgs[e.error]||'Mic error: '+e.error));
+  };
+}
+
+function setMicLbl(t,c) {
+  const el=document.getElementById('micLbl');
+  if(el){el.textContent=t; el.className='mic-lbl'+(c?' '+c:'');}
+}
+function syncMicBtns(ico,fsize){
+  ['micBtn','micBtnMobile'].forEach(id=>{const b=document.getElementById(id);if(b){b.textContent=ico;b.style.fontSize=fsize||'';}});
+}
+function toggleMic() {
+  // Check if running inside an iframe (e.g. Claude.ai preview) — mic won't work there
+  if (window.self !== window.top) {
+    addTr('info','⚠ Mic blocked: You are viewing this inside a preview panel. Please download the file and open it directly in Chrome or Edge to use the microphone.');
+    // Flash the mobile status area
+    const msb = document.getElementById('micStatusMobile');
+    const txt = document.getElementById('micStatusMobileTxt');
+    if(msb && txt){
+      txt.textContent = 'Open file in Chrome to use mic';
+      msb.style.display='flex';
+      msb.style.color='var(--gold)';
+      setTimeout(()=>{ msb.style.display='none'; msb.style.color=''; }, 4000);
+    }
+    return;
+  }
+  // Ensure STT is initialised (safe to call multiple times)
+  if (!SR) {
+    addTr('info','⚠ Speech recognition is not supported in this browser. Please use Chrome or Edge.');
+    return;
+  }
+  if (!recognition) initSTT();
+  if (isListening) {
+    recognition.stop();
+  } else {
+    stopSpeaking();
+    try {
+      recognition.start();
+    } catch(err) {
+      if (err.name !== 'InvalidStateError') {
+        addTr('info','⚠ Could not start mic: '+err.message);
+      }
+    }
+  }
+}
+function chatKeyMobile(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chatSendMobile();}
+}
+function chatSendMobile(){
+  const mobile=document.getElementById('chatInputMobile');
+  const desktop=document.getElementById('chatInput');
+  // Sync value to desktop input then send
+  if(mobile&&desktop) desktop.value=mobile.value;
+  chatSend();
+  if(mobile) mobile.value='';
+}
+
+let trC=0;
+function addTr(type, text) {
+  const log = document.getElementById('trLog');
+  const now = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const labels={user:'You said',interim:'Hearing…',info:'System'};
+  const id='tr'+(++trC);
+  const div=document.createElement('div');
+  div.className='tr-item '+type; div.id=id;
+  div.innerHTML='<div class="tr-lbl">'+(labels[type]||type)+'</div><div class="tr-text">'+text+'</div><div class="tr-ts">'+now+'</div>';
+  log.appendChild(div); log.scrollTop=log.scrollHeight; return id;
+}
+
+/* TTS */
+let activeSpeakBtn = null;
+function stripMd(t) {
+  return t.replace(/#{1,4} /g,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1')
+    .replace(/`([^`]+)`/g,'$1').replace(/^[- ] +/gm,'').replace(/^\d+\. +/gm,'')
+    .replace(/---+/g,'.').replace(/<[^>]+>/g,'').replace(/\n{2,}/g,'. ')
+    .replace(/\n/g,' ').replace(/  +/g,' ').trim();
+}
+function speakText(raw, btn) {
+  if (!window.speechSynthesis) return;
+  stopSpeaking();
+  const clean = stripMd(raw); if (!clean) return;
+  const utt = new SpeechSynthesisUtterance(clean);
+  utt.lang='en-US'; utt.rate=parseFloat(document.getElementById('speedSel').value);
+  utt.pitch=1.0; utt.volume=1.0;
+  const voices=window.speechSynthesis.getVoices();
+  const pick=voices.find(v=>v.name==='Google US English')||voices.find(v=>v.name.includes('Samantha'))||voices.find(v=>v.lang==='en-US'&&v.localService)||voices.find(v=>v.lang.startsWith('en'));
+  if (pick) utt.voice=pick;
+  utt.onstart=()=>{ activeSpeakBtn=btn; if(btn) btn.classList.add('speaking'); document.getElementById('ttsBar').classList.add('show'); };
+  utt.onend=utt.onerror=()=>{ if(activeSpeakBtn){activeSpeakBtn.classList.remove('speaking');activeSpeakBtn=null;} document.getElementById('ttsBar').classList.remove('show'); };
+  window.speechSynthesis.speak(utt);
+}
+function stopSpeaking() {
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  if (activeSpeakBtn) { activeSpeakBtn.classList.remove('speaking'); activeSpeakBtn=null; }
+  document.getElementById('ttsBar').classList.remove('show');
+}
+function handleReplay(btn) { speakText(decodeURIComponent(btn.dataset.raw), btn); }
+
+/* Chat */
+function chatResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,80)+'px'; }
+function chatKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chatSend();} }
+
+function fmtMd(t) {
+  return t
+    .replace(/^#{1,3} (.+)$/gm,'<h4>$1</h4>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`([^`]+)`/g,'<span class="pill">$1</span>')
+    .replace(/^[- ] (.+)$/gm,'<li>$1</li>')
+    .replace(/^\d+\. (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>[\s\S]*?<\/li>)/g,'<ul>$1</ul>')
+    .replace(/^---+$/gm,'<div class="sdiv"></div>')
+    .replace(/\n\n+/g,'<br><br>')
+    .replace(/\n/g,'<br>');
+}
+
+function addMsg(role, html, raw) {
+  const box=document.getElementById('chatMsgs');
+  const div=document.createElement('div'); div.className='msg '+role;
+  const av=role==='bot'?'🩺':'👤';
+  const foot=(role==='bot'&&raw)?'<div class="msg-foot"><button class="replay-btn" data-raw="'+encodeURIComponent(raw)+'" onclick="handleReplay(this)">🔊 Listen</button></div>':'';
+  div.innerHTML='<div class="msg-av">'+av+'</div><div class="msg-body"><div class="msg-bub">'+html+'</div>'+foot+'</div>';
+  box.appendChild(div); box.scrollTop=box.scrollHeight; return div;
+}
+function showTyping() {
+  const box=document.getElementById('chatMsgs');
+  const d=document.createElement('div'); d.id='typing'; d.className='msg bot';
+  d.innerHTML='<div class="msg-av">🩺</div><div class="msg-body"><div class="msg-bub"><div class="tdots"><span></span><span></span><span></span></div></div></div>';
+  box.appendChild(d); box.scrollTop=box.scrollHeight;
+}
+function hideTyping() { document.getElementById('typing')?.remove(); }
+
+async function chatSend() {
+  const inp=document.getElementById('chatInput');
+  const text=inp.value.trim();
+  if (!text||chatBusy) return;
+  stopSpeaking();
+  addTr('user','"'+text+'"');
+  addMsg('user',text,null);
+  chatHistory.push({role:'user',content:text});
+  inp.value=''; inp.style.height='auto';
+  chatBusy=true;
+  document.getElementById('sendBtn').disabled=true;
+  const smb=document.getElementById('sendBtnMobile');
+  if(smb) smb.disabled=true;
+  showTyping();
+  try {
+    const res=await fetch('/api/chat',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:chatHistory})
+    });
+    const data=await res.json();
+    const reply=data.reply||data.content?.[0]?.text||'Sorry, could not get a response. Please try again.';
+    hideTyping();
+    chatHistory.push({role:'assistant',content:reply});
+    const el=addMsg('bot',fmtMd(reply),reply);
+    addTr('info','AI replied — '+reply.slice(0,55).replace(/\*\*/g,'').trim()+'…');
+    if (autoSpeak) { const btn=el.querySelector('.replay-btn'); setTimeout(()=>speakText(reply,btn),150); }
+  } catch(e) {
+    hideTyping();
+    addMsg('bot','Connection error. Check your internet and try again.',null);
+    addTr('info','API error.');
+  }
+  chatBusy=false;
+  document.getElementById('sendBtn').disabled=false;
+  const smb2=document.getElementById('sendBtnMobile');
+  if(smb2) smb2.disabled=false;
+  setTimeout(()=>document.getElementById('chatInput').focus(),80);
+}
+
+function quickAsk(q) {
+  document.getElementById('chatInput').value=q;
+  chatResize(document.getElementById('chatInput'));
+  if(topicsOpen) toggleTopics();
+  chatSend();
+}
+function toggleAutoSpeak() {
+  autoSpeak=!autoSpeak;
+  const btn=document.getElementById('autoSpeakBtn');
+  btn.innerHTML=autoSpeak?'🔊 Auto-speak':'🔇 Muted';
+  btn.classList.toggle('on',autoSpeak);
+  if(!autoSpeak) stopSpeaking();
+}
+function toggleTopics() {
+  topicsOpen=!topicsOpen;
+  document.getElementById('topicsDrawer').classList.toggle('open',topicsOpen);
+  document.getElementById('topicsBtn').classList.toggle('on',topicsOpen);
+}
+function clearChat() {
+  stopSpeaking(); chatHistory=[];
+  document.getElementById('chatMsgs').innerHTML='';
+  document.getElementById('trLog').innerHTML='';
+  const e=document.createElement('div'); e.className='tr-empty'; e.id='trEmpty';
+  e.innerHTML='<div class="tr-empty-ico">🎙️</div><div class="tr-empty-txt">Click the mic above and speak.<br/>Words appear here live.</div>';
+  document.getElementById('trLog').appendChild(e);
+  addMsg('bot','<strong>Cleared!</strong> Ask me anything about skin health.',null);
+}
+
+/* About page — instant reveal */
+function revealAbout() {
+  document.querySelectorAll('#page-about .ab-sec, #page-about .disc-box, #page-about [style]').forEach((el,i) => {
+    el.style.opacity='0'; el.style.transform='translateY(18px)'; el.style.transition='opacity .5s ease, transform .5s ease';
+    el.style.transitionDelay=(i*0.07)+'s';
+    setTimeout(()=>{ el.style.opacity='1'; el.style.transform='translateY(0)'; },40);
+  });
+}
+
+/* Boot */
+document.addEventListener('DOMContentLoaded', () => {
+  // Init speech recognition immediately so mic is ready before chat page opens
+  initSTT();
+  if (window.speechSynthesis) {
+    window.speechSynthesis.getVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined)
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+  }
+});
+go('home');
+</script>
+</body>
+</html>
