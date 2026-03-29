@@ -83,12 +83,6 @@ STEP 5 — Open browser
   Voice:     Web Speech API (STT + TTS)
 
 ═══════════════════════════════════════════════════
-⚠️  DISCLAIMER
-═══════════════════════════════════════════════════
-  This is an educational project only.
-  Do NOT use for real medical diagnosis.
-  Always consult a licensed dermatologist.
-
 ═══════════════════════════════════════════════════
   Made with ❤️  using CNN + Flask + Claude AI
 ═══════════════════════════════════════════════════
