@@ -5,3 +5,4 @@ werkzeug
 groq
 tf-keras
 python-dotenv
+Pillow
