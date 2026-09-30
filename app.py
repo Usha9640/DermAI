@@ -215,7 +215,7 @@ def api_chat():
         last_message = messages[-1]["content"]
 
         chat_response = GROQ_CLIENT.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user",   "content": last_message}
